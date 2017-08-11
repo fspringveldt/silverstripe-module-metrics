@@ -2,6 +2,31 @@
 
 class ModuleMetrics
 {
+
+    /**
+     * @var ModuleMetrics
+     */
+    private static $instance;
+
+    /**
+     * Contains the results
+     * @var array
+     */
+    private $result;
+
+    /**
+     * Returns a singleton of this object.
+     * @return ModuleMetrics
+     */
+    public static function inst()
+    {
+
+        if (!self::$instance) {
+            self::$instance = new ModuleMetrics();
+        }
+        return self::$instance;
+    }
+
     /**
      * Returns the following info about each module:
      * array(
@@ -12,14 +37,14 @@ class ModuleMetrics
      * )
      * @return array
      */
-    public static function getAllInstallationMetrics()
+    public function setUp()
     {
-        $result = self::getAllModules();
-//        self::addClassUsageInfoByModule($result);
-//        d($result);
-        self::addDataObjectUsageInfoByModule($result);
-        $sql = self::generateSQL($result);
-//        d($result);
+        $this->getAllModules();
+        $this->addClassInfoPerModule();
+        $this->addDataObjectAndExtensionInfo();
+        d($this->result);
+        $sql = $this->toSQL();
+
         echo($sql);
         exit;
         return $result;
@@ -35,9 +60,9 @@ class ModuleMetrics
      * )
      * @return array
      */
-    public static function getModulesWithDataManipulations()
+    private function getModulesWithDataManipulations()
     {
-        $result = self::getAllInstallationMetrics();
+        $result = $this->setUp();
         foreach ($result as $moduleName => $info) {
             if (!isset($info['DataObjects'])) {
                 unset($result[$moduleName]);
@@ -56,9 +81,9 @@ class ModuleMetrics
      * )
      * @return array
      */
-    public static function getModulesWithNoDataManipulations()
+    public function getModulesWithNoDataManipulations()
     {
-        $result = self::getAllInstallationMetrics();
+        $result = $this->setUp();
         foreach ($result as $moduleName => $info) {
             if (isset($info['DataObjects'])) {
                 unset($result[$moduleName]);
@@ -69,40 +94,73 @@ class ModuleMetrics
 
     /**
      * Returns information about all DataObjects per module, excluding test DataObjects.
-     * @param $result
-     * @return array
      */
-    public static function addDataObjectUsageInfoByModule(&$result)
+    public function addDataObjectAndExtensionInfo()
     {
-        $dataObjectClasses = ClassInfo::dataClassesFor('DataObject');
-        array_shift($dataObjectClasses);
-        $extensions = ClassInfo::subclassesFor('DataExtension');
-        array_shift($extensions);
-        $dataClasses = ArrayLib::array_merge_recursive($dataObjectClasses);
-        ksort($dataClasses);
-        foreach ($dataClasses as $class) {
-            $className = $class;
-            $tableName = $className;
+        $classes = array(
+            'DataObjects' => ClassInfo::dataClassesFor('DataObject'),
+            'DataExtensions' => ClassInfo::subclassesFor('DataExtension')
+        );
+        foreach ($classes as $label => $dataClasses) {
+            array_shift($dataClasses);
+            ksort($dataClasses);
+            $this->addDatabaseInfo($dataClasses, $label);
+        }
+    }
 
+    /**
+     * @param array $classes
+     * @param $classType
+     */
+    public function addDatabaseInfo($classes, $classType)
+    {
+        foreach ($classes as $className) {
             $fields = DataObject::database_fields($className);
-            $moduleName = self::getModuleName($className);
-
+            $moduleName = $this->getModuleName($className);
+            $tableName = $className;
             if (!$fields || ClassInfo::classImplements($className, 'TestOnly')) {
                 continue;
             }
+
+            if ($classType == 'DataExtensions') {
+                $tables = array();
+                // Find all DataObjects with this extension, and add them to the table list
+                foreach (ClassInfo::dataClassesFor('DataObject') as $dataClass) {
+                    if (Object::has_extension($dataClass, $className)) {
+                        $tables[] = $dataClass;
+                    }
+                }
+
+                if (count($tables)) {
+                    $tableName = $tables;
+                }
+            }
+
             // Add database fields
             $info = array(
                 'Table' => $tableName,
                 'Fields' => DataObject::custom_database_fields($className)
             );
 
-            $result[$moduleName][] = $info;
+            $this->result[$moduleName][$classType . 's'][strtolower($className)] = $info;
         }
     }
 
-    private static function generateSQL($result)
+    /**
+     * Generates SQL statements. Expects $result to look like this
+     * <code>
+     * array(
+     *  'moduleName'=>array(
+     *      'Path'=>'Path/to/module'
+     *      'Classes'=>array()
+     *  )
+     * )
+     * </code>
+     * @return string
+     */
+    private function toSQL()
     {
-        $schema = self::getSchemaName();
+        $schema = $this->getSchemaName();
         $moduleTableName = 'ModuleDataObjectRowCount';
         $statements = array();
         $statements[] = "DROP TABLE IF EXISTS $moduleTableName;
@@ -115,7 +173,8 @@ class ModuleMetrics
                         ColumnsInUse INTEGER
                         ); 
                         TRUNCATE TABLE $moduleTableName;";
-        foreach ($result as $moduleName => $tables) {
+        foreach ($this->result as $moduleName => $moduleInfo) {
+            $tables = $moduleInfo['Classes'];
             // First create temporary table
             $statement = array();
             foreach ($tables as $tableRow) {
@@ -155,7 +214,7 @@ class ModuleMetrics
      * @param $class
      * @return string
      */
-    private static function getModuleName($class)
+    private function getModuleName($class)
     {
         $dir = SS_ClassLoader::instance()->getItemPath($class);
         $dir = str_ireplace(BASE_PATH . DIRECTORY_SEPARATOR, '', $dir);
@@ -167,20 +226,54 @@ class ModuleMetrics
      * Returns a list of all modules within this SilverStripe installation
      * @return array
      */
-    private static function getAllModules()
+    private function getAllModules()
     {
         $manifest = SS_ClassLoader::instance()->getManifest();
         $result = $manifest->getModules();
         array_walk($result, function (&$value, $key) {
-            $value = array();
+            $value = array('Path' => $value);
         });
         ksort($result);
+        $this->result = $result;
         return $result;
     }
 
-    private static function getSchemaName()
+    private function getSchemaName()
     {
         global $dbName;
         return $dbName;
+    }
+
+    /**
+     * Gets class and Sub-class information for each module
+     * @param bool $includeSubclasses
+     */
+    public function addClassInfoPerModule($includeSubclasses = false)
+    {
+        foreach ($this->result as $key => $value) {
+            $classes = ClassInfo::classes_for_folder($value['Path']);
+            asort($classes);
+            foreach ($classes as $index => $class) {
+                $this->result[$key]['Classes'][$class] = null;
+                if ($includeSubclasses) {
+                    $this->addSubClassInfo($key, $class);
+                }
+            }
+        }
+    }
+
+    public function addSubClassInfo($key, $class)
+    {
+        if ($subClasses = ClassInfo::subclassesFor($class)) {
+            array_shift($subClasses);
+            if (count($subClasses)) {
+                // Add subclass info
+                $subClasses = array_keys($subClasses);
+                asort($subClasses);
+                $this->result[$key]['Classes'][$class]['SubClasses'] = $subClasses;
+            } else {
+                $this->result[$key]['Classes'][$class] = null;
+            }
+        }
     }
 }
