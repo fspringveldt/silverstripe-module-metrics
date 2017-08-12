@@ -200,7 +200,6 @@ class ModuleMetrics
         $statements[] = $this->dataObjectsToSQL($schema, $moduleTableName, $fieldsOnly);
         $statements[] = $this->dataExtensionsToSQL($schema, $moduleTableName, $fieldsOnly);
         $sql = $statements;
-        $sql[] = "SELECT * FROM $moduleTableName;";
         // Remove all false entries
         $sql = array_filter($sql);
         return implode(' ', $sql);
@@ -295,7 +294,7 @@ class ModuleMetrics
         $name,
         $dataType
     ) {
-    
+
         $extensionFields = $tableRow['Fields'];
         array_walk($extensionFields, function (&$value, $key) {
             $value = "NULLIF($value,'')";
