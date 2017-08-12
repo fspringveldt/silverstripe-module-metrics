@@ -39,12 +39,11 @@ class ModuleMetrics
      */
     public function setUp()
     {
-        $this->getAllModules();
+        $this->setModules();
         $this->addClassInfoPerModule();
         $this->addDataObjectAndExtensionInfo();
-        d($this->result);
         $sql = $this->toSQL();
-
+//        d($this->result);
         echo($sql);
         exit;
         return $result;
@@ -97,12 +96,13 @@ class ModuleMetrics
      */
     public function addDataObjectAndExtensionInfo()
     {
+        $extensions = ClassInfo::subclassesFor('DataExtension');
+        array_shift($extensions);
         $classes = array(
             'DataObjects' => ClassInfo::dataClassesFor('DataObject'),
-            'DataExtensions' => ClassInfo::subclassesFor('DataExtension')
+            'DataExtensions' => $extensions
         );
         foreach ($classes as $label => $dataClasses) {
-            array_shift($dataClasses);
             ksort($dataClasses);
             $this->addDatabaseInfo($dataClasses, $label);
         }
@@ -122,27 +122,43 @@ class ModuleMetrics
                 continue;
             }
 
+            /**
+             * Find all DataObjects with this extension and add them to the table list
+             * if they actually implement the DataExtension's fields
+             */
             if ($classType == 'DataExtensions') {
                 $tables = array();
-                // Find all DataObjects with this extension, and add them to the table list
-                foreach (ClassInfo::dataClassesFor('DataObject') as $dataClass) {
+                $extensionFields = DataObject::custom_database_fields($className);
+                $dataClasses = ClassInfo::dataClassesFor('DataObject');
+                foreach ($dataClasses as $dataClass) {
                     if (Object::has_extension($dataClass, $className)) {
-                        $tables[] = $dataClass;
+                        foreach ($extensionFields as $fName => $fType) {
+                            if (DataObject::has_own_table($dataClass) &&
+                                DataObject::has_own_table_database_field($dataClass, $fName)
+                            ) {
+                                $tables[] = $dataClass;
+                                break;
+                            }
+                        }
                     }
                 }
 
-                if (count($tables)) {
-                    $tableName = $tables;
+                $total = count($tables);
+                if ($total) {
+                    $tableName = ($total == 1) ? $tables[0] : $tables;
+                } else {
+                    // This particular extension is available but not in use.
+                    continue;
                 }
             }
 
             // Add database fields
             $info = array(
                 'Table' => $tableName,
-                'Fields' => DataObject::custom_database_fields($className)
+                'Fields' => array_keys(DataObject::custom_database_fields($className))
             );
 
-            $this->result[$moduleName][$classType . 's'][strtolower($className)] = $info;
+            $this->result[$moduleName][$classType][strtolower($className)] = $info;
         }
     }
 
@@ -163,50 +179,141 @@ class ModuleMetrics
         $schema = $this->getSchemaName();
         $moduleTableName = 'ModuleDataObjectRowCount';
         $statements = array();
+        $fieldSchemas = array(
+            'ModuleName' => 'VARCHAR(100)',
+            'TableName' => 'VARCHAR(100)',
+            'BaseTableName' => 'VARCHAR(100)',
+            'RowsFound' => 'INTEGER',
+            'LastUsed' => 'DATETIME',
+            'ModuleStatus' => 'VARCHAR(8)',
+            'Type' => 'VARCHAR(100)'
+        );
+        $fieldsOnly = implode(',', array_keys($fieldSchemas));
+        array_walk($fieldSchemas, function (&$value, $key) {
+            $value = "$key $value";
+        });
+        $definitionsOnly = implode(',', array_values($fieldSchemas));
         $statements[] = "DROP TABLE IF EXISTS $moduleTableName;
                         CREATE TABLE IF NOT EXISTS $moduleTableName 
-                        (ModuleName VARCHAR(100), 
-                        TableName VARCHAR(100),
-                        BaseTableName VARCHAR(100),
-                        RowsFound INTEGER,
-                        LastUsed DATETIME,
-                        ColumnsInUse INTEGER
-                        ); 
+                        ($definitionsOnly); 
                         TRUNCATE TABLE $moduleTableName;";
+        $statements[] = $this->dataObjectsToSQL($schema, $moduleTableName, $fieldsOnly);
+        $statements[] = $this->dataExtensionsToSQL($schema, $moduleTableName, $fieldsOnly);
+        $sql = $statements;
+        $sql[] = "SELECT * FROM $moduleTableName;";
+        // Remove all false entries
+        $sql = array_filter($sql);
+        return implode(' ', $sql);
+    }
+
+    /**
+     * @param $schema
+     * @param $moduleTableName
+     * @return string
+     */
+    public function dataObjectsToSQL($schema, $moduleTableName, $fieldsOnly)
+    {
+        $result = '';
+        $dataType = 'DataObjects';
         foreach ($this->result as $moduleName => $moduleInfo) {
-            $tables = $moduleInfo['Classes'];
+            if (!isset($moduleInfo[$dataType])) {
+                continue;
+            };
+            $dataObjects = $moduleInfo[$dataType];
             // First create temporary table
             $statement = array();
-            foreach ($tables as $tableRow) {
+            foreach ($dataObjects as $name => $tableRow) {
                 $table = $tableRow['Table'];
                 $baseTable = ClassInfo::baseDataClass($table);
                 $output = "SELECT '$moduleName' as Module,";
-                foreach ($tableRow['Fields'] as $columnName => $fieldType) {
+                foreach ($tableRow['Fields'] as $columnName) {
                     $output .= "`$columnName`,";
                 }
                 $output = rtrim($output, ',');
                 $output .= " FROM `$schema`.`$table`";
-                $insertInto = "INSERT INTO $moduleTableName (ModuleName, BaseTableName, RowsFound, 
-                                TableName, LastUsed, ColumnsInUse) 
-                                SELECT '$moduleName' as ModuleName, '$baseTable' as BaseTableName,
-                                        count(*) as 'RowsFound',
+                $insertInto = "INSERT INTO $moduleTableName ($fieldsOnly) 
+                                SELECT '$moduleName' as ModuleName,
                                         '$table' as TableName, 
+                                        '$baseTable' as BaseTableName,
+                                        count(*) as 'RowsFound',
                                         (Select Max(`$baseTable`.LastEdited) from `$baseTable` JOIN 
                                         `$table` as child on `$baseTable`.`ID` = child.`ID`
-                                        )
-                                        as LastEdited,
-                                        0 as ColumnsInUse ";
-
-
-                $insertInto .= "FROM ($output) as `$table`;";
+                                        )as LastUsed,
+                                        CASE WHEN count(*) > 0 THEN 'Not used' ELSE 'In use' END as ModuleStatus,
+                                        '$dataType' as `Type`";
+                $insertInto .= " FROM ($output) as `$table`;";
                 $statement[] = $insertInto;
             }
-            $statements[] = implode(';', $statement);
+            $result .= implode(';', $statement);
         }
-        $sql = $statements;
-        $sql[] = "SELECT * FROM $moduleTableName;";
-        $sql = array_filter($sql);
-        return implode(' ', $sql);
+        return $result;
+    }
+
+    public function dataExtensionsToSQL($schema, $moduleTableName, $fieldsOnly)
+    {
+        $result = '';
+        $dataType = 'DataExtensions';
+        foreach ($this->result as $moduleName => $moduleInfo) {
+            if (!isset($moduleInfo[$dataType])) {
+                continue;
+            };
+            $dataObjects = $moduleInfo[$dataType];
+            // First create temporary table
+            $statement = array();
+            foreach ($dataObjects as $name => $tableRow) {
+                $baseTables = array();
+                if (is_array($tableRow['Table'])) {
+                    $baseTables = $tableRow['Table'];
+                } else {
+                    $baseTables[] = $tableRow['Table'];
+                }
+                foreach ($baseTables as $baseTable) {
+                    $statement[] = $this->addSingleExtensionField(
+                        $tableRow,
+                        $schema,
+                        $baseTable,
+                        $moduleTableName,
+                        $fieldsOnly,
+                        $moduleName,
+                        $name,
+                        $dataType
+                    );
+                }
+            }
+            $result .= implode(';', $statement);
+        }
+        return $result;
+    }
+
+    public function addSingleExtensionField(
+        $tableRow,
+        $schema,
+        $baseTable,
+        $moduleTableName,
+        $fieldsOnly,
+        $moduleName,
+        $name,
+        $dataType
+    ) {
+    
+        $extensionFields = $tableRow['Fields'];
+        array_walk($extensionFields, function (&$value, $key) {
+            $value = "NULLIF($value,'')";
+        });
+        $extensionFields = implode(',', $extensionFields);
+        $output = "SELECT COALESCE($extensionFields) as `Status`";
+        $output .= " FROM `$schema`.`$baseTable`";
+        $output .= " WHERE COALESCE($extensionFields) IS NOT NULL";
+        $insertInto = "INSERT INTO $moduleTableName ($fieldsOnly)
+                        SELECT '$moduleName' as ModuleName,
+                                '$name' as TableName,
+                                '$baseTable' as BaseTableName,
+                                count(*) as 'RowsFound',
+                                null as LastUsed,
+                                CASE WHEN count(*) > 0 THEN 'In use' ELSE 'Not used' END as ModuleStatus,
+                                '$dataType' as `Type`";
+        $insertInto .= " FROM ($output) as `$name`;";
+        return $insertInto;
     }
 
     /**
@@ -226,7 +333,7 @@ class ModuleMetrics
      * Returns a list of all modules within this SilverStripe installation
      * @return array
      */
-    private function getAllModules()
+    private function setModules()
     {
         $manifest = SS_ClassLoader::instance()->getManifest();
         $result = $manifest->getModules();
