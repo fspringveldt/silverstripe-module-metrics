@@ -29,7 +29,7 @@ class ModuleMetrics
 
     /**
      * Returns the following info about each module:
-     * array(
+     * array(a
      *      'Path', // The path tot he module
      *      'Classes', // Returns all classes (and subclasses where applicable)
      *                              contained in this modules folder
@@ -43,10 +43,8 @@ class ModuleMetrics
         $this->addClassInfoPerModule();
         $this->addDataObjectAndExtensionInfo();
         $sql = $this->toSQL();
-//        d($this->result);
-        echo($sql);
+        echo $sql;
         exit;
-        return $result;
     }
 
     /**
@@ -185,7 +183,7 @@ class ModuleMetrics
             'BaseTableName' => 'VARCHAR(100)',
             'RowsFound' => 'INTEGER',
             'LastUsed' => 'DATETIME',
-            'ModuleStatus' => 'VARCHAR(8)',
+            'InUse' => 'VARCHAR(8)',
             'Type' => 'VARCHAR(100)'
         );
         $fieldsOnly = implode(',', array_keys($fieldSchemas));
@@ -195,8 +193,7 @@ class ModuleMetrics
         $definitionsOnly = implode(',', array_values($fieldSchemas));
         $statements[] = "DROP TABLE IF EXISTS $moduleTableName;
                         CREATE TABLE IF NOT EXISTS $moduleTableName 
-                        ($definitionsOnly); 
-                        TRUNCATE TABLE $moduleTableName;";
+                        ($definitionsOnly);";
         $statements[] = $this->dataObjectsToSQL($schema, $moduleTableName, $fieldsOnly);
         $statements[] = $this->dataExtensionsToSQL($schema, $moduleTableName, $fieldsOnly);
         $sql = $statements;
@@ -238,7 +235,7 @@ class ModuleMetrics
                                         (Select Max(`$baseTable`.LastEdited) from `$baseTable` JOIN 
                                         `$table` as child on `$baseTable`.`ID` = child.`ID`
                                         )as LastUsed,
-                                        CASE WHEN count(*) > 0 THEN 'Not used' ELSE 'In use' END as ModuleStatus,
+                                        CASE WHEN count(*) > 0 THEN 1 ELSE 0 END as InUse,
                                         '$dataType' as `Type`";
                 $insertInto .= " FROM ($output) as `$table`;";
                 $statement[] = $insertInto;
@@ -293,7 +290,8 @@ class ModuleMetrics
         $moduleName,
         $name,
         $dataType
-    ) {
+    )
+    {
 
         $extensionFields = $tableRow['Fields'];
         array_walk($extensionFields, function (&$value, $key) {
@@ -309,7 +307,7 @@ class ModuleMetrics
                                 '$baseTable' as BaseTableName,
                                 count(*) as 'RowsFound',
                                 null as LastUsed,
-                                CASE WHEN count(*) > 0 THEN 'In use' ELSE 'Not used' END as ModuleStatus,
+                                CASE WHEN count(*) > 0 THEN 1 ELSE 0 END as InUse,
                                 '$dataType' as `Type`";
         $insertInto .= " FROM ($output) as `$name`;";
         return $insertInto;
