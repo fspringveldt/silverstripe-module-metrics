@@ -27,66 +27,20 @@ class ModuleMetrics
         return self::$instance;
     }
 
-    /**
-     * Returns the following info about each module:
-     * array(a
-     *      'Path', // The path tot he module
-     *      'Classes', // Returns all classes (and subclasses where applicable)
-     *                              contained in this modules folder
-     *      'DataObjects', // Further info about all DataObjects introduced by this module
-     * )
-     * @return array
-     */
-    public function setUp()
+    public function setResult()
     {
         $this->setModules();
         $this->addClassInfoPerModule();
         $this->addDataObjectAndExtensionInfo();
-        $sql = $this->toSQL();
-        echo $sql;
-        exit;
     }
 
-    /**
-     * Returns the following info about each module that affects the database:
-     * array(
-     *      'Path', // The path tot he module
-     *      'Classes', // Returns all classes (and subclasses where applicable)
-     *                              contained in this modules folder
-     *      'DataObjects', // Further info about all DataObjects introduced by this module
-     * )
-     * @return array
-     */
-    private function getModulesWithDataManipulations()
+    public function getResult()
     {
-        $result = $this->setUp();
-        foreach ($result as $moduleName => $info) {
-            if (!isset($info['DataObjects'])) {
-                unset($result[$moduleName]);
-            }
+        if (!$this->result) {
+            $this->setResult();
         }
 
-        return $result;
-    }
-
-    /**
-     * Returns the following info about each module that has no database interaction:
-     * array(
-     *      'Path', // The path tot he module
-     *      'Classes', // Returns all classes (and subclasses where applicable)
-     *                              contained in this modules folder
-     * )
-     * @return array
-     */
-    public function getModulesWithNoDataManipulations()
-    {
-        $result = $this->setUp();
-        foreach ($result as $moduleName => $info) {
-            if (isset($info['DataObjects'])) {
-                unset($result[$moduleName]);
-            }
-        }
-        return $result;
+        return $this->result;
     }
 
     /**
@@ -161,18 +115,12 @@ class ModuleMetrics
     }
 
     /**
-     * Generates SQL statements. Expects $result to look like this
-     * <code>
-     * array(
-     *  'moduleName'=>array(
-     *      'Path'=>'Path/to/module'
-     *      'Classes'=>array()
-     *  )
-     * )
-     * </code>
+     * Returns a SQL dump of module data interaction, runnable in mysql.
+     * @todo Make database agnostic by implementing Convert::symbol2sql
+     *
      * @return string
      */
-    private function toSQL()
+    public function getResultAsSQL()
     {
         $schema = $this->getSchemaName();
         $moduleTableName = 'ModuleDataObjectRowCount';
@@ -205,13 +153,14 @@ class ModuleMetrics
     /**
      * @param $schema
      * @param $moduleTableName
+     * @param $fieldsOnly
      * @return string
      */
     public function dataObjectsToSQL($schema, $moduleTableName, $fieldsOnly)
     {
         $result = '';
         $dataType = 'DataObjects';
-        foreach ($this->result as $moduleName => $moduleInfo) {
+        foreach ($this->getResult() as $moduleName => $moduleInfo) {
             if (!isset($moduleInfo[$dataType])) {
                 continue;
             };
@@ -249,7 +198,7 @@ class ModuleMetrics
     {
         $result = '';
         $dataType = 'DataExtensions';
-        foreach ($this->result as $moduleName => $moduleInfo) {
+        foreach ($this->getResult() as $moduleName => $moduleInfo) {
             if (!isset($moduleInfo[$dataType])) {
                 continue;
             };
@@ -354,7 +303,7 @@ class ModuleMetrics
      */
     public function addClassInfoPerModule($includeSubclasses = false)
     {
-        foreach ($this->result as $key => $value) {
+        foreach ($this->getResult() as $key => $value) {
             $classes = ClassInfo::classes_for_folder($value['Path']);
             asort($classes);
             foreach ($classes as $index => $class) {
