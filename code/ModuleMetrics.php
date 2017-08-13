@@ -151,6 +151,15 @@ class ModuleMetrics
     }
 
     /**
+     * Echo's the SQL to the screen and halts script execution.
+     */
+    public function printSQL()
+    {
+        echo $this->getResultAsSQL();
+        exit;
+    }
+
+    /**
      * @param $schema
      * @param $moduleTableName
      * @param $fieldsOnly
