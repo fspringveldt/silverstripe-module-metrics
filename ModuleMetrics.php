@@ -404,8 +404,8 @@ class ModuleMetrics
     public function setModuleUsage()
     {
         foreach ($this->result as $moduleName => $moduleInfo) {
+            $this->result[$moduleName]['InUse'] = 2;
             if (array_key_exists('DataObjects', $moduleInfo)) {
-                $this->result[$moduleName]['InUse'] = 0;
                 foreach ($moduleInfo['DataObjects'] as $dataObjectInfo) {
                     $table = $dataObjectInfo['Table'];
                     $count = DB::query("SELECT COUNT(*) FROM `$table`")->value();
@@ -417,7 +417,6 @@ class ModuleMetrics
                 }
             }
             if (array_key_exists('DataExtensions', $moduleInfo)) {
-                $this->result[$moduleName]['InUse'] = 0;
                 foreach ($moduleInfo['DataExtensions'] as $extensionName => $extensionInfo) {
                     $baseTables = array();
                     if (is_array($extensionInfo['Table'])) {
