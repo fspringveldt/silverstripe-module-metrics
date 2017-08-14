@@ -1,9 +1,11 @@
 #!/usr/bin/env php
 <?php
-
+$failSilent = true;
 // Argument parsing
 if (empty($_SERVER['argv'][1])) {
-    echo "Usage: {$_SERVER['argv'][0]} (site-docroot)\n";
+    if (!$failSilent) {
+        echo "Usage: {$_SERVER['argv'][0]} (site-docroot)\n";
+    }
     exit(1);
 }
 $basePath = $_SERVER['argv'][1];
@@ -12,7 +14,9 @@ if ($basePath[0] != '/') {
 }
 
 if (!file_exists($basePath)) {
-    echo "Error: Path not found - $basePath";
+    if (!$failSilent) {
+        echo "Error: Path not found - $basePath";
+    }
     exit(1);
 }
 
