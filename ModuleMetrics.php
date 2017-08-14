@@ -410,7 +410,7 @@ class ModuleMetrics
                     $table = $dataObjectInfo['Table'];
                     $count = DB::query("SELECT COUNT(*) FROM `$table`")->value();
                     if ($count > 0) {
-                        $this->result[$moduleName]['InUse'] = true;
+                        $this->result[$moduleName]['InUse'] = 1;
                         $this->result[$moduleName]['RecordCount'] = $count;
                         break;
                     }
@@ -454,9 +454,9 @@ class ModuleMetrics
             $result[] = array(
                 'Site' => $this->getSiteName(),
                 'ModuleName' => $moduleName,
-                'InUse' => (isset($moduleInfo['InUse']) ? $moduleInfo['InUse'] : 'Unknown'),
+                'InUse' => (isset($moduleInfo['InUse']) ? $moduleInfo['InUse'] : 2),
                 'RecordsFound' => (isset($moduleInfo['RecordCount']) ? $moduleInfo['RecordCount'] : 0),
-                'FieldInUse' => (isset($moduleInfo['FieldInUse']) ? $moduleInfo['FieldInUse'] : '')
+                'FieldInUse' => (isset($moduleInfo['FieldInUse']) ? $moduleInfo['FieldInUse'] : 'n/a')
             );
         }
         return Convert::array2json($result);

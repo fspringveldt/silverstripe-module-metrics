@@ -39,7 +39,7 @@ The below fields are output per site, per module. This file can be imported to M
 #### Field descriptions
 * **Site**: The output of Director::baseURL()
 * **ModuleName**: The actual module
-* **InUse**: Either Unknown, 1 or 0. Unknown is output if a module has no database interaction (i.e. No DataObject or DataExtension introduced)
+* **InUse**: Either 0, 1 or 2. A value of 2 indicates the module has no Database interaction
 * **RecordsFound**: The number of records found in the case of a DataObject
 * **FieldInUse**: The first DataExtension field found with a non-null value.
 
