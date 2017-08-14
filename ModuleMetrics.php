@@ -294,8 +294,7 @@ class ModuleMetrics
         $moduleName,
         $name,
         $dataType
-    )
-    {
+    ) {
         $extensionFields = array_keys($tableRow['Fields']);
         array_walk($extensionFields, function (&$value, $key) {
             $value = "NULLIF($value,'')";
@@ -433,7 +432,7 @@ class ModuleMetrics
                         foreach ($dataClasses as $dataClass) {
                             if (Object::has_extension($dataClass, $extensionName)) {
                                 foreach ($extensionFields as $fName => $fType) {
-                                    if ($baseTableDataObject::get()->where("$fName IS NOT NULL")->count() > 0) {
+                                    if ($baseTableDataObject::get()->where("$fName IS NOT NULL AND $fName <> 0")->count() > 0) {
                                         //If any of the fields in this module has a non-null value, then it is in use
                                         $this->result[$moduleName]['InUse'] = 1;
                                         $this->result[$moduleName]['FieldInUse'] = "$baseTable.$fName";
