@@ -27,6 +27,11 @@ $HOME/www/ss-site-2
 cd /tmp/ss-module-metrics/ && >output.txt && awk '{printf "php cli-module-metrics.php %s >> output.txt\n", $0}' input.txt | sh
 
 ```
+*__N.B.__ By including the manifest-like SilverStripe files (Core.php) from your script 
+you introduce a possibility of having cache files re-generated, 
+which could cause problems for these websites to frontend users. Care must therefore be taken to ensure
+ that the script is run as the web server's user.*
+
 
 4. This command runs the module-usage inspector on all the sites specified in `input.txt`, sends the output in JSON format to a file called `/tmp/ss-module-metrics/output.txt`.
 The below fields are output per site, per module. This file can be imported to MySQL for further analysis.
