@@ -112,4 +112,3 @@ DataModel::set_inst(new DataModel());
 require_once('ModuleMetrics.php');
 echo ModuleMetrics::inst()->toJson();
 echo "\n";
-
