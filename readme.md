@@ -43,7 +43,8 @@ The below fields are output per site, per module. This file can be imported to M
 * **RecordsFound**: The number of records found in the case of a DataObject
 * **FieldInUse**: The first DataExtension field found with a non-null value.
 
-
+#### Sample results formatted as table
+![Sample formatted output](sample-formatted-output.png)
 
 
 ## License
