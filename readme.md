@@ -24,12 +24,12 @@ $HOME/www/ss-site-2
 3. Run the following from your bash command prompt to output its results:
 
 ```bash
->/tmp/ss-module-metrics/output.txt && awk '{printf "php /tmp/ss-module-metrics/cli-module-metrics.php %s >> /tmp/ss-module-metrics/output.txt\n", $0}' input.txt | sh
+>cd /tmp/ss-module-metrics/ && >output.txt && awk '{printf "php cli-module-metrics.php %s >> output.txt\n", $0}' input.txt | sh
 
 ```
 
 4. This command runs the module-usage inspector on all the sites specified in `input.txt`, sends the output in JSON format to a file called `/tmp/ss-module-metrics/output.txt`.
-The below fields are output per site, per module:
+The below fields are output per site, per module. This file can be imported to MySQL for further analysis.
 
 ```json
 [
