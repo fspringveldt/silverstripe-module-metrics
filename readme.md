@@ -38,7 +38,7 @@ The below fields are output per site, per module. This file can be imported to M
 
 ```json
 [
-  {"Site":"http:\/\/dev.cwp15.local","ModuleName":"admin","InUse":"Unknown","RecordsFound":0,"FieldInUse":""}
+  {"Site":"http:\/\/dev.cwp15.local","ModuleName":"admin","InUse":"1","RecordsFound":2,"FieldInUse":"n/a"}
 ]
 ```
 #### Field descriptions
