@@ -24,7 +24,7 @@ $HOME/www/ss-site-2
 3. Run the following from your bash command prompt to output its results:
 
 ```bash
->cd /tmp/ss-module-metrics/ && >output.txt && awk '{printf "php cli-module-metrics.php %s >> output.txt\n", $0}' input.txt | sh
+cd /tmp/ss-module-metrics/ && >output.txt && awk '{printf "php cli-module-metrics.php %s >> output.txt\n", $0}' input.txt | sh
 
 ```
 

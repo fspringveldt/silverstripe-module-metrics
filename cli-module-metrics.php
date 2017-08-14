@@ -1,17 +1,15 @@
 #!/usr/bin/env php
 <?php
 
-/**
- * SSPak Sniffer
- * Extract database and assets information from a SilverStripe site.
- */
 // Argument parsing
 if (empty($_SERVER['argv'][1])) {
     echo "Usage: {$_SERVER['argv'][0]} (site-docroot)\n";
     exit(1);
 }
 $basePath = $_SERVER['argv'][1];
-if ($basePath[0] != '/') $basePath = getcwd() . '/' . $basePath;
+if ($basePath[0] != '/') {
+    $basePath = getcwd() . '/' . $basePath;
+}
 // SilverStripe bootstrap
 $basePath = rtrim($basePath, '/');
 define('BASE_PATH', $basePath);
@@ -25,16 +23,20 @@ chdir(BASE_PATH);
 if (file_exists(BASE_PATH . '/sapphire/core/Core.php')) {
     //SS 2.x
     require_once(BASE_PATH . '/sapphire/core/Core.php');
-} else if (file_exists(BASE_PATH . '/framework/core/Core.php')) {
-    //SS 3.x
-    require_once(BASE_PATH . '/framework/core/Core.php');
-} else if (file_exists(BASE_PATH . '/framework/src/Core/Core.php')) {
-    //SS 4.x
-    require_once(BASE_PATH . '/vendor/autoload.php');
-    require_once(BASE_PATH . '/framework/src/Core/Core.php');
 } else {
-    echo "Couldn't locate framework's Core.php. Perhaps " . BASE_PATH . " is not a SilverStripe project?\n";
-    exit(2);
+    if (file_exists(BASE_PATH . '/framework/core/Core.php')) {
+        //SS 3.x
+        require_once(BASE_PATH . '/framework/core/Core.php');
+    } else {
+        if (file_exists(BASE_PATH . '/framework/src/Core/Core.php')) {
+            //SS 4.x
+            require_once(BASE_PATH . '/vendor/autoload.php');
+            require_once(BASE_PATH . '/framework/src/Core/Core.php');
+        } else {
+            echo "Couldn't locate framework's Core.php. Perhaps " . BASE_PATH . " is not a SilverStripe project?\n";
+            exit(2);
+        }
+    }
 }
 
 global $databaseConfig;
@@ -98,7 +100,6 @@ $_SERVER['REQUEST_URI'] = BASE_URL . '/' . $url;
 // Direct away - this is the "main" function, that hands control to the apporopriate controller
 DataModel::set_inst(new DataModel());
 require_once('ModuleMetrics.php');
-$output[] = ModuleMetrics::inst()->toJson();
-echo serialize($output);
+echo serialize(ModuleMetrics::inst()->toJson());
 echo "\n";
 

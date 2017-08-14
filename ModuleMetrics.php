@@ -460,6 +460,6 @@ class ModuleMetrics
                 'FieldInUse' => (isset($moduleInfo['FieldInUse']) ? $moduleInfo['FieldInUse'] : '')
             );
         }
-        echo Convert::array2json($result);
+        return Convert::array2json($result);
     }
 }
