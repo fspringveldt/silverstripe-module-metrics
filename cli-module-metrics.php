@@ -10,6 +10,12 @@ $basePath = $_SERVER['argv'][1];
 if ($basePath[0] != '/') {
     $basePath = getcwd() . '/' . $basePath;
 }
+
+if (!file_exists($basePath)) {
+    echo "Error: Path not found - $basePath";
+    exit(1);
+}
+
 // SilverStripe bootstrap
 $basePath = rtrim($basePath, '/');
 define('BASE_PATH', $basePath);
