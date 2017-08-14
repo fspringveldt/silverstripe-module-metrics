@@ -1,33 +1,50 @@
-# SilverStripe supported module skeleton
+# SilverStripe module-usage inspector
 
-A useful skeleton to more easily create modules that conform to the [Module Standard]
-(https://docs.silverstripe.org/en/3.2/developer_guides/extending/modules/#module-standard).
-
-This readme contains descriptions of the parts of this module base you should customise to meet you own module needs.
-For example, the module name in the H1 above should be you own module name, and the description text you are reading now
-is where you should provide a good short explanation of what your module does.
-
-Where possible we have included default text that can be included as is into your module and indicated in 
-other places where you need to customise it
-
-Below is a template of the sections of your readme.md you should ideally include to met the Module Standard 
-and help others make use of your modules.
+This module aims to supply dev-ops teams with information related to SilverStripe
+module usage across many sites.
 
 ## Requirements
  * SilverStripe ^3.1
- * Other module
- * Other server requirement
- * Etc
 
-## Installation
-Add some installation instructions here, having a 1 line composer copy and paste is useful. 
-Here is a composer command to create a new module project. Ensure you read the ['publishing a module']
-(https://docs.silverstripe.org/en/developer_guides/extending/how_tos/publish_a_module/) guide update you module 
-composer.json to designate your code as a SilverStripe module. 
+## Installation and setup
+1. Clone down the repository to your `/tmp/ss-module-metrics` directory
 
 ```
-composer create-project silverstripe-module/skeleton module-name
+git clone https://github.com/fspringveldt/silverstripe-module-metrics /tmp/ss-module-metrics
 ```
+
+2. Create an simple text file in the same directory you cloned this project to (i.e. /tmp/ss-module-metrics), into which you put paths to all the SilverStripe directories
+you would like to include in your scan. An example below of a file called `input.txt`, with the following content:
+
+```txt
+$HOME/www/ss-site-1
+$HOME/www/ss-site-2
+```
+
+3. Run the following from your bash command prompt to output its results:
+
+```bash
+>/tmp/ss-module-metrics/output.txt && awk '{printf "php /tmp/ss-module-metrics/cli-module-metrics.php %s >> /tmp/ss-module-metrics/output.txt\n", $0}' input.txt | sh
+
+```
+
+4. This command runs the module-usage inspector on all the sites specified in `input.txt`, sends the output in JSON format to a file called `/tmp/ss-module-metrics/output.txt`.
+The below fields are output per site, per module:
+
+```json
+[
+  {"Site":"http:\/\/dev.cwp15.local","ModuleName":"admin","InUse":"Unknown","RecordsFound":0,"FieldInUse":""}
+]
+```
+#### Field descriptions
+* **Site**: The output of Director::baseURL()
+* **ModuleName**: The actual module
+* **InUse**: Either Unknown, 1 or 0. Unknown is output if a module has no database interaction (i.e. No DataObject or DataExtension introduced)
+* **RecordsFound**: The number of records found in the case of a DataObject
+* **FieldInUse**: The first DataExtension field found with a non-null value.
+
+
+
 
 ## License
 See [License](license.md)
@@ -38,32 +55,8 @@ it is one of the most permissive and open licenses.
 Feel free to alter the [license.md](license.md) to suit if you wan tto use an alternative license.
 You can use [choosealicense.com](http://choosealicense.com) to help pick a suitable license for your project.
 
-## Documentation
- * [Documentation readme](docs/en/readme.md)
-
-Add links into your docs/<language> folder here unless your module only requires minimal documentation 
-in that case, add here and remove the docs folder. You might use this as a quick table of content if you
-mhave multiple documentation pages.
-
-## Example configuration (optional)
-If your module makes use of the config API in SIlverStripe it's a good idea to provide an example config
- here that will get the module working out of the box and expose the user to the possible configuration options.
-
-Provide a yaml code example where possible.
-
-```yaml
-
-Page:
-  config_option: true
-  another_config:
-    - item1
-    - item2
-  
-```
-
 ## Maintainers
- * Person here <person@emailaddress.com>
- * Another maintainer <maintain@emailaddress.com>
+ * Franco Springveldt <fspringveldt@gmail.com>
  
 ## Bugtracker
 Bugs are tracked in the issues section of this repository. Before submitting an issue please read over 
