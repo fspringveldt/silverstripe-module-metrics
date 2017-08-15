@@ -45,7 +45,7 @@ class ModuleMetrics
     }
 
     /**
-     * Returns information about all DataObjects per module, excluding test DataObjects.
+     * Sets information about all DataObjects per module, excluding test DataObjects.
      */
     public function addDataObjectAndExtensionInfo()
     {
@@ -129,7 +129,7 @@ class ModuleMetrics
     }
 
     /**
-     * Returns a list of all modules within this SilverStripe installation
+     * Sets a list of all modules within this SilverStripe installation
      * @return array
      */
     public function setModules()
