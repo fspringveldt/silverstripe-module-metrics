@@ -164,40 +164,62 @@ class ModuleMetrics
     {
         foreach ($this->result as $moduleName => $moduleInfo) {
             $this->result[$moduleName]['InUse'] = 2;
-            if (array_key_exists('DataObjects', $moduleInfo)) {
-                foreach ($moduleInfo['DataObjects'] as $dataObjectInfo) {
-                    $table = $dataObjectInfo['Table'];
-                    $count = DB::query("SELECT COUNT(*) FROM `$table`")->value();
-                    if ($count > 0) {
-                        $this->result[$moduleName]['InUse'] = 1;
-                        $this->result[$moduleName]['RecordCount'] = $count;
-                        break;
-                    }
+            $this->determineDataObjectUsage($moduleName, $moduleInfo);
+            $this->determineDataExtensionUsage($moduleName, $moduleInfo);
+        }
+    }
+
+    /**
+     * Checks if any of the DataObjects introduced by $moduleName has any records and returns true.
+     * false otherwise
+     * @param $moduleName
+     * @param $moduleInfo
+     */
+    public function determineDataObjectUsage($moduleName, $moduleInfo)
+    {
+        if (array_key_exists('DataObjects', $moduleInfo)) {
+            foreach ($moduleInfo['DataObjects'] as $dataObjectInfo) {
+                $table = $dataObjectInfo['Table'];
+                $count = DB::query("SELECT COUNT(*) FROM `$table`")->value();
+                if ($count > 0) {
+                    $this->result[$moduleName]['InUse'] = 1;
+                    $this->result[$moduleName]['RecordCount'] = $count;
+                    return;
                 }
             }
-            if (array_key_exists('DataExtensions', $moduleInfo)) {
-                foreach ($moduleInfo['DataExtensions'] as $extensionName => $extensionInfo) {
-                    $baseTables = array();
-                    if (is_array($extensionInfo['Table'])) {
-                        $baseTables = $extensionInfo['Table'];
-                    } else {
-                        $baseTables[] = $extensionInfo['Table'];
-                    }
-                    foreach ($baseTables as $baseTable) {
-                        $baseTableDataObject = singleton($baseTable);
-                        $extensionFields = $extensionInfo['Fields'];
-                        $dataClasses = ClassInfo::dataClassesFor('DataObject');
-                        foreach ($dataClasses as $dataClass) {
-                            if (Object::has_extension($dataClass, $extensionName)) {
-                                foreach ($extensionFields as $fName => $fType) {
-                                    if ($baseTableDataObject::get()
-                                            ->where("$fName IS NOT NULL AND $fName <> 0")->count() > 0
-                                    ) {
-                                        //If any of the fields in this module has a non-null value, then it is in use
-                                        $this->result[$moduleName]['InUse'] = 1;
-                                        $this->result[$moduleName]['FieldInUse'] = "$baseTable.$fName";
-                                        break(4);
-                                    }
+        }
+    }
+
+    /**
+     * Checks if any of the fields introduced by a DataExtension within $moduleName has a non-null value. If it does
+     * then it is assumed to be in use.
+     * @param $moduleName
+     * @param $moduleInfo
+     */
+    public function determineDataExtensionUsage($moduleName, $moduleInfo)
+    {
+        if (array_key_exists('DataExtensions', $moduleInfo)) {
+            foreach ($moduleInfo['DataExtensions'] as $extensionName => $extensionInfo) {
+                $baseTables = array();
+                if (is_array($extensionInfo['Table'])) {
+                    $baseTables = $extensionInfo['Table'];
+                } else {
+                    $baseTables[] = $extensionInfo['Table'];
+                }
+                foreach ($baseTables as $baseTable) {
+                    $baseTableDataObject = singleton($baseTable);
+                    $extensionFields = $extensionInfo['Fields'];
+                    $dataClasses = ClassInfo::dataClassesFor('DataObject');
+                    foreach ($dataClasses as $dataClass) {
+                        if (Object::has_extension($dataClass, $extensionName)) {
+                            foreach ($extensionFields as $fName => $fType) {
+                                if ($baseTableDataObject::get()
+                                        ->where("$fName IS NOT NULL AND $fName <> 0")->count() > 0
+                                ) {
+                                    //If any of the fields in this module has a non-null value, then it is in use
+                                    $this->result[$moduleName]['InUse'] = 1;
+                                    $this->result[$moduleName]['FieldInUse'] = "$baseTable.$fName";
+                                    return;
                                 }
                             }
                         }
