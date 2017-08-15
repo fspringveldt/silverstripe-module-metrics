@@ -216,7 +216,7 @@ class ModuleMetrics
                                 if ($baseTableDataObject::get()
                                         ->where("$fName IS NOT NULL AND $fName <> 0")->count() > 0
                                 ) {
-                                    //If any of the fields in this module has a non-null value, then it is in use
+                                    // If any of the fields in this module has a non-null value, then it is in use
                                     $this->result[$moduleName]['InUse'] = 1;
                                     $this->result[$moduleName]['FieldInUse'] = "$baseTable.$fName";
                                     return;

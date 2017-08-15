@@ -3,7 +3,7 @@
 /**
  * Class SQLFormatter
  *
- * NB THIS CLASS IS A FUTURE EXPIREMENT AND IN USE CURRENTLUY.
+ * NB This class is a future experiment and not currently in use
  */
 class SQLFormatter extends ModuleMetrics
 {
