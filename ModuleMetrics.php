@@ -229,6 +229,10 @@ class ModuleMetrics
         }
     }
 
+    /**
+     * Returns $this->result as json
+     * @return string
+     */
     public function toJSON()
     {
         $result = array();
