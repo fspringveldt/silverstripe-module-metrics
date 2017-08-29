@@ -56,8 +56,8 @@ $_SESSION = null;
 global $_FILE_TO_URL_MAPPING;
 $baseURL = $_FILE_TO_URL_MAPPING[rtrim($basePath, '/')];
 @define('BASE_URL', $baseURL);
+Config::nest();
 Config::inst()->update('Director', 'alternate_base_url', $baseURL);
-$basePath = $basePath;
 
 require_once("model/DB.php");
 
@@ -112,3 +112,4 @@ DataModel::set_inst(new DataModel());
 require_once('ModuleMetrics.php');
 echo ModuleMetrics::inst()->toJson();
 echo "\n";
+Config::unnest();
