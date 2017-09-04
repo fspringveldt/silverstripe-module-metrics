@@ -233,7 +233,7 @@ class ModuleMetrics
      * Returns $this->result as json
      * @return string
      */
-    public function toJSON()
+    public function toJSON($prettyPrint = false)
     {
         $result = array();
         foreach ($this->getResult() as $moduleName => $moduleInfo) {
@@ -245,6 +245,6 @@ class ModuleMetrics
                 'FieldInUse' => (isset($moduleInfo['FieldInUse']) ? $moduleInfo['FieldInUse'] : 'n/a')
             );
         }
-        return Convert::array2json($result);
+        return Convert::array2json($result, $prettyPrint ? JSON_PRETTY_PRINT : 0);
     }
 }
