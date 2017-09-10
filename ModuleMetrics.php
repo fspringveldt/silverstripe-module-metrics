@@ -213,12 +213,18 @@ class ModuleMetrics
                     foreach ($dataClasses as $dataClass) {
                         if (Object::has_extension($dataClass, $extensionName)) {
                             foreach ($extensionFields as $fName => $fType) {
+                                $escapedFieldName = sprintf(
+                                    '%s.%s',
+                                    Convert::symbol2sql($baseTable),
+                                    Convert::symbol2sql($fName)
+                                );
+
                                 if ($baseTableDataObject::get()
-                                        ->where("$fName IS NOT NULL AND $fName <> 0")->count() > 0
+                                        ->where("$escapedFieldName IS NOT NULL AND $escapedFieldName <> 0")->count() > 0
                                 ) {
                                     // If any of the fields in this module has a non-null value, then it is in use
                                     $this->result[$moduleName]['InUse'] = 1;
-                                    $this->result[$moduleName]['FieldInUse'] = "$baseTable.$fName";
+                                    $this->result[$moduleName]['FieldInUse'] = $escapedFieldName;
                                     return;
                                 }
                             }
