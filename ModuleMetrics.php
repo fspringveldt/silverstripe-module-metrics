@@ -16,6 +16,18 @@ class ModuleMetrics
     protected $result;
 
     /**
+     * This is a map of modules which mutates the DB through DataExtension->augmentDatabase method.
+     * These modules require upfront code-analysis to determine which tables they introduce so we can
+     * check against them.
+     *
+     * This maps a module to the table-suffixes which it introduces
+     * @var array
+     */
+    protected $specialModules = array(
+        'Translatable' => array('translationgroups')
+    );
+
+    /**
      * Returns a singleton of this object.
      * @return ModuleMetrics
      */
@@ -167,6 +179,44 @@ class ModuleMetrics
             $this->determineDataObjectUsage($moduleName, $moduleInfo);
             $this->determineDataExtensionUsage($moduleName, $moduleInfo);
         }
+        $this->determineAugmentDatabaseExtensionUsage();
+    }
+
+    /**
+     * Cycles through all DataObjects to determine if they have a specific data-extension which overrides
+     * DataExtension->augmentDatabase method. If it does, it checks whether a table exists containing a suffix
+     * introduced in the method. If it does, it checks if that table has any rows.
+     */
+    public function determineAugmentDatabaseExtensionUsage()
+    {
+        foreach ($this->specialModules as $moduleName => $tableSuffixes) {
+            // Loops through all the DataObjects to determine if they have the extension
+            foreach (ClassInfo::subclassesFor('DataObject') as $dataObject) {
+                if (!Object::has_extension($dataObject, $moduleName)) {
+                    continue;
+                }
+                $baseDataClass = ClassInfo::baseDataClass($dataObject);
+                if ($dataObject != $baseDataClass) {
+                    continue;
+                }
+
+                foreach ($tableSuffixes as $key => $tableSuffix) {
+                    $table = sprintf('%s_%s', $baseDataClass, $tableSuffix);
+                    if (!ClassInfo::hasTable($table)) {
+                        continue;
+                    }
+
+                    $count = DB::query("SELECT COUNT(*) FROM `$table`")->value();
+                    if ($count > 0) {
+                        $lModuleName = strtolower($moduleName);
+                        $this->result[$lModuleName]['InUse'] = 1;
+                        $this->result[$lModuleName]['TableInUse'] = $table;
+                        $this->result[$lModuleName]['RecordCount'] = $count;
+                        return;
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -187,6 +237,7 @@ class ModuleMetrics
                 if ($count > 0) {
                     $this->result[$moduleName]['InUse'] = 1;
                     $this->result[$moduleName]['RecordCount'] = $count;
+                    $this->result[$moduleName]['TableInUse'] = $table;
                     return;
                 }
             }
@@ -203,34 +254,45 @@ class ModuleMetrics
     {
         if (array_key_exists('DataExtensions', $moduleInfo)) {
             foreach ($moduleInfo['DataExtensions'] as $extensionName => $extensionInfo) {
-                $baseTables = array();
-                if (is_array($extensionInfo['Table'])) {
-                    $baseTables = $extensionInfo['Table'];
-                } else {
-                    $baseTables[] = $extensionInfo['Table'];
-                }
-                foreach ($baseTables as $baseTable) {
-                    $baseTableDataObject = singleton($baseTable);
-                    $extensionFields = $extensionInfo['Fields'];
-                    $dataClasses = ClassInfo::dataClassesFor('DataObject');
-                    foreach ($dataClasses as $dataClass) {
-                        if (Object::has_extension($dataClass, $extensionName)) {
-                            foreach ($extensionFields as $fName => $fType) {
-                                $escapedFieldName = sprintf(
-                                    '%s.%s',
-                                    Convert::symbol2sql($baseTable),
-                                    Convert::symbol2sql($fName)
-                                );
+                $this->usageBasedOnColumnValues($moduleName, $extensionName, $extensionInfo);
+            }
+        }
+    }
 
-                                if ($baseTableDataObject::get()
-                                        ->where("$escapedFieldName IS NOT NULL AND $escapedFieldName <> 0")->count() > 0
-                                ) {
-                                    // If any of the fields in this module has a non-null value, then it is in use
-                                    $this->result[$moduleName]['InUse'] = 1;
-                                    $this->result[$moduleName]['FieldInUse'] = $escapedFieldName;
-                                    return;
-                                }
-                            }
+    /**
+     * Determines if a module is in use based by checking for a valid value in any new field introduced.
+     * @param string $moduleName
+     * @param string $extensionName
+     * @param array $extensionInfo
+     */
+    public function usageBasedOnColumnValues($moduleName, $extensionName, $extensionInfo)
+    {
+        $baseTables = array();
+        if (is_array($extensionInfo['Table'])) {
+            $baseTables = $extensionInfo['Table'];
+        } else {
+            $baseTables[] = $extensionInfo['Table'];
+        }
+        foreach ($baseTables as $baseTable) {
+            $baseTableDataObject = singleton($baseTable);
+            $extensionFields = $extensionInfo['Fields'];
+            $dataClasses = ClassInfo::dataClassesFor('DataObject');
+            foreach ($dataClasses as $dataClass) {
+                if (Object::has_extension($dataClass, $extensionName)) {
+                    foreach ($extensionFields as $fName => $fType) {
+                        $escapedFieldName = sprintf(
+                            '%s.%s',
+                            Convert::symbol2sql($baseTable),
+                            Convert::symbol2sql($fName)
+                        );
+
+                        if ($baseTableDataObject::get()
+                                ->where("$escapedFieldName IS NOT NULL AND $escapedFieldName <> 0")->count() > 0
+                        ) {
+                            // If any of the fields in this module has a non-null value, then it is in use
+                            $this->result[$moduleName]['InUse'] = 1;
+                            $this->result[$moduleName]['FieldInUse'] = $escapedFieldName;
+                            return;
                         }
                     }
                 }
@@ -251,7 +313,8 @@ class ModuleMetrics
                 'ModuleName' => $moduleName,
                 'InUse' => (isset($moduleInfo['InUse']) ? $moduleInfo['InUse'] : 2),
                 'RecordsFound' => (isset($moduleInfo['RecordCount']) ? $moduleInfo['RecordCount'] : 0),
-                'FieldInUse' => (isset($moduleInfo['FieldInUse']) ? $moduleInfo['FieldInUse'] : 'n/a')
+                'FieldInUse' => (isset($moduleInfo['FieldInUse']) ? $moduleInfo['FieldInUse'] : 'n/a'),
+                'TableInUse' => (isset($moduleInfo['TableInUse']) ? $moduleInfo['TableInUse'] : 'n/a')
             );
         }
         return Convert::array2json($result);
