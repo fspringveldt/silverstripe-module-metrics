@@ -1,7 +1,12 @@
 # SilverStripe module-usage inspector
 
 This module aims to supply dev-ops teams with information related to SilverStripe
-module usage across many sites.
+module usage across many sites. It does this by analysing a modules DataObjects and DataExtension classes.
+1. DataObjects: if at least one of them has rows, it assumes the module is in use
+2. DataExtensions: if any new columns are introduced by these with non-null values, it assumes the module is in use.
+
+NB: `DataExtension::augmentDataBase()` also mutates the database (see Versioned or Translatable), but there is no structured way to determine what those mutations are. For these modules
+   some analysis at a module-level is required to determine which table's existence can reliably determine the module's usage.
 
 ## Requirements
  * SilverStripe ^3.1
