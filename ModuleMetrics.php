@@ -180,6 +180,9 @@ class ModuleMetrics
         if (array_key_exists('DataObjects', $moduleInfo)) {
             foreach ($moduleInfo['DataObjects'] as $dataObjectInfo) {
                 $table = $dataObjectInfo['Table'];
+                if (!ClassInfo::hasTable($table)) {
+                    continue;
+                }
                 $count = DB::query("SELECT COUNT(*) FROM `$table`")->value();
                 if ($count > 0) {
                     $this->result[$moduleName]['InUse'] = 1;
