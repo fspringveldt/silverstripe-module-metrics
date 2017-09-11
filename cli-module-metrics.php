@@ -1,14 +1,18 @@
 #!/usr/bin/env php
 <?php
-$failSilent = true;
+
+$basePath = $_SERVER['argv'][1];
+$failSilent = $_SERVER['argv'][2];
+$prettyPrint = $_SERVER['argv'][3];
+
 // Argument parsing
-if (empty($_SERVER['argv'][1])) {
+if (empty($basePath)) {
     if (!$failSilent) {
-        echo "Usage: {$_SERVER['argv'][0]} (site-docroot)\n";
+        echo "Usage: {$_SERVER['argv'][0]} (site-docroot) (fail-silently 0|1) (JSON_PRETTY_PRINT 0|1)\n";
     }
     exit(1);
 }
-$basePath = $_SERVER['argv'][1];
+
 if ($basePath[0] != '/') {
     $basePath = getcwd() . '/' . $basePath;
 }
@@ -110,6 +114,6 @@ $_SERVER['REQUEST_URI'] = BASE_URL . '/' . $url;
 // Direct away - this is the "main" function, that hands control to the apporopriate controller
 DataModel::set_inst(new DataModel());
 require_once('ModuleMetrics.php');
-echo ModuleMetrics::inst()->toJson();
+echo ModuleMetrics::inst()->toJson($prettyPrint);
 echo "\n";
 Config::unnest();
