@@ -206,7 +206,7 @@ class ModuleMetrics
                         continue;
                     }
 
-                    $count = DB::query("SELECT COUNT(*) FROM `$table`")->value();
+                    $count = SQLSelect::create()->setFrom($table)->count('ID');
                     if ($count > 0) {
                         $lModuleName = strtolower($moduleName);
                         $this->result[$lModuleName]['InUse'] = 1;
@@ -233,7 +233,7 @@ class ModuleMetrics
                 if (!ClassInfo::hasTable($table)) {
                     continue;
                 }
-                $count = DB::query("SELECT COUNT(*) FROM `$table`")->value();
+                $count = SQLSelect::create()->setFrom($table)->count('ID');
                 if ($count > 0) {
                     $this->result[$moduleName]['InUse'] = 1;
                     $this->result[$moduleName]['RecordCount'] = $count;
@@ -302,6 +302,7 @@ class ModuleMetrics
 
     /**
      * Returns $this->result as json
+     * @param bool $prettyPrint
      * @return string
      */
     public function toJSON($prettyPrint = false)
