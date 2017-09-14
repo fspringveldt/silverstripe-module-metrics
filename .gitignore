@@ -1,3 +1,9 @@
+
 .idea/
+composer.lock
+Would skip repository framework/
+vendor/
+framework/
 input.txt
+output.json
 output.txt

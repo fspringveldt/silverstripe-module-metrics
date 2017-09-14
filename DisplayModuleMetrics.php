@@ -1,7 +1,11 @@
 <?php
 
-class CollectMetrics extends BuildTask
+class DisplayModuleMetrics extends BuildTask
 {
+
+    protected $title = 'Module usage information';
+
+    protected $description = 'Displays usage information related to modules on this website.';
 
     /**
      * Implement this method in the task subclass to
@@ -12,6 +16,6 @@ class CollectMetrics extends BuildTask
     public function run($request)
     {
         $result = ModuleMetrics::inst()->toJson();
-        
+        echo $result;
     }
 }

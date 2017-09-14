@@ -2,6 +2,11 @@
 
 class ModuleMetrics
 {
+    const USAGE_TYPE_EXTENSION = 'Extension';
+    const USAGE_TYPE_DATA_OBJECT = 'DataObject';
+    const USAGE_TYPE_AUGMENT_DATABASE = 'AugmentDatabase';
+    const USAGE_TYPE_NO_DB_INTERACTION = 'NoDBInteraction';
+
     protected $siteName;
 
     /**
@@ -175,6 +180,7 @@ class ModuleMetrics
     public function setModuleUsage()
     {
         foreach ($this->result as $moduleName => $moduleInfo) {
+            $this->result[$moduleName]['UsageType'] = self::USAGE_TYPE_NO_DB_INTERACTION;
             $this->result[$moduleName]['InUse'] = 2;
             $this->determineDataObjectUsage($moduleName, $moduleInfo);
             $this->determineDataExtensionUsage($moduleName, $moduleInfo);
@@ -206,9 +212,11 @@ class ModuleMetrics
                         continue;
                     }
 
-                    $count = SQLSelect::create()->setFrom($table)->count('ID');
+                    $query = SQLSelect::create()->setFrom($table);
+                    $count = $query->count('ID');
                     if ($count > 0) {
                         $lModuleName = strtolower($moduleName);
+                        $this->result[$lModuleName]['UsageType'] = self::USAGE_TYPE_AUGMENT_DATABASE;
                         $this->result[$lModuleName]['InUse'] = 1;
                         $this->result[$lModuleName]['TableInUse'] = $table;
                         $this->result[$lModuleName]['RecordCount'] = $count;
@@ -235,9 +243,11 @@ class ModuleMetrics
                 }
                 $count = SQLSelect::create()->setFrom($table)->count('ID');
                 if ($count > 0) {
+                    $this->result[$moduleName]['UsageType'] = self::USAGE_TYPE_DATA_OBJECT;
                     $this->result[$moduleName]['InUse'] = 1;
                     $this->result[$moduleName]['RecordCount'] = $count;
                     $this->result[$moduleName]['TableInUse'] = $table;
+                    $this->result[$moduleName]['LastEdited'] = DataList::create($table)->max('LastEdited');
                     return;
                 }
             }
@@ -285,13 +295,15 @@ class ModuleMetrics
                             Convert::symbol2sql($baseTable),
                             Convert::symbol2sql($fName)
                         );
-
-                        if ($baseTableDataObject::get()
-                                ->where("$escapedFieldName IS NOT NULL AND $escapedFieldName <> 0")->count() > 0
+                        $record = $baseTableDataObject::get()
+                            ->where("$escapedFieldName IS NOT NULL AND $escapedFieldName <> 0");
+                        if ($record->count() > 0
                         ) {
                             // If any of the fields in this module has a non-null value, then it is in use
+                            $this->result[$moduleName]['UsageType'] = self::USAGE_TYPE_EXTENSION;
                             $this->result[$moduleName]['InUse'] = 1;
                             $this->result[$moduleName]['FieldInUse'] = $escapedFieldName;
+                            $this->result[$moduleName]['LastEdited'] = $record->LastEdited;
                             return;
                         }
                     }
@@ -313,9 +325,11 @@ class ModuleMetrics
                 'Site' => $this->getSiteName(),
                 'ModuleName' => $moduleName,
                 'InUse' => (isset($moduleInfo['InUse']) ? $moduleInfo['InUse'] : 2),
+                'UsageType' => (isset($moduleInfo['UsageType']) ? $moduleInfo['UsageType'] : null),
                 'RecordsFound' => (isset($moduleInfo['RecordCount']) ? $moduleInfo['RecordCount'] : 0),
-                'FieldInUse' => (isset($moduleInfo['FieldInUse']) ? $moduleInfo['FieldInUse'] : 'n/a'),
-                'TableInUse' => (isset($moduleInfo['TableInUse']) ? $moduleInfo['TableInUse'] : 'n/a')
+                'FieldInUse' => (isset($moduleInfo['FieldInUse']) ? $moduleInfo['FieldInUse'] : null),
+                'TableInUse' => (isset($moduleInfo['TableInUse']) ? $moduleInfo['TableInUse'] : null),
+                'LastEdited' => (isset($moduleInfo['LastEdited']) ? $moduleInfo['LastEdited'] : null)
             );
         }
         return Convert::array2json($result, $prettyPrint ? JSON_PRETTY_PRINT : 0);

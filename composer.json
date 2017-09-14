@@ -1,7 +1,14 @@
 {
-	"name": "fspringveldt/silverstripe-module-metrics",
-	"description": "Experimental module which provides metrics on SilverStripe modules in use",
-	"keywords": ["silverstripe", "CMS", "module metrics"],
-	"license": "BSD-3-Clause",
-	"minimum-stability": "dev"
+  "name": "fspringveldt/silverstripe-module-metrics",
+  "description": "Experimental module which provides metrics on SilverStripe modules in use",
+  "keywords": [
+    "silverstripe",
+    "CMS",
+    "module metrics"
+  ],
+  "license": "BSD-3-Clause",
+  "minimum-stability": "dev",
+  "require": {
+    "silverstripe/framework": "^3"
+  }
 }

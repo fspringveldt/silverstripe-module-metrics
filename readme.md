@@ -50,8 +50,15 @@ The below fields are output per site, per module. This file can be imported to M
 * **Site**: The output of Director::baseURL()
 * **ModuleName**: The actual module
 * **InUse**: Either 0, 1 or 2. A value of 2 indicates the module has no Database interaction
+* **UsageType**: Can be one of either 
+    * Extension - an extension column introduced by this module has valid data (i.e. not null and <> 0)
+    * DataObject - a dataobject introduced byt this module has data
+    * AugmentDatabase - rows were found in a table introduced through DataExtension::augmentDatabase()
+    * NoDBInteraction - no database interaction was found within this module
 * **RecordsFound**: The number of records found in the case of a DataObject
 * **FieldInUse**: The first DataExtension field found with a non-null value.
+* **TableInUse**: The first database table found with a row
+* **LastEdited**: The LastEdited column in the table
 
 #### Sample results formatted as table
 ![Sample formatted output](sample-formatted-output.png)
