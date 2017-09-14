@@ -113,7 +113,7 @@ $_SERVER['REQUEST_URI'] = BASE_URL . '/' . $url;
 
 // Direct away - this is the "main" function, that hands control to the apporopriate controller
 DataModel::set_inst(new DataModel());
-require_once('ModuleMetrics.php');
+require_once('code/ModuleMetrics.php');
 echo ModuleMetrics::inst()->toJson($prettyPrint);
 echo "\n";
 Config::unnest();
