@@ -1,9 +1,9 @@
 #!/usr/bin/env php
 <?php
 
-$basePath = $_SERVER['argv'][1];
-$failSilent = $_SERVER['argv'][2];
-$prettyPrint = $_SERVER['argv'][3];
+$basePath = isset($_SERVER['argv'][1]) ? $_SERVER['argv'][1] : null;
+$failSilent = isset($_SERVER['argv'][2]) ? $_SERVER['argv'][2] : null;
+$prettyPrint = isset($_SERVER['argv'][3]) ? $_SERVER['argv'][3] : null;
 
 // Argument parsing
 if (empty($basePath)) {
