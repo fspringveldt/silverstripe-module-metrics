@@ -167,7 +167,7 @@ class ModuleMetrics
     public function getSiteName()
     {
         if (!$this->siteName) {
-            $this->siteName = Director::baseURL();
+            $this->siteName = Director::absoluteBaseURL();
         }
         return $this->siteName;
     }
