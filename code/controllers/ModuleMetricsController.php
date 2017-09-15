@@ -5,7 +5,7 @@ class ModuleMetricsController extends Controller
     private static $allowed_actions = [
         'ping',
         'index' => '->ping',
-        'json' => '->json'
+        'json' => '->ping'
     ];
 
     public function index()
@@ -21,6 +21,6 @@ class ModuleMetricsController extends Controller
 
     public function ping()
     {
-        return (bool)$this->config()->get('share_usage_with_silverstripe');
+        return (bool)Config::inst()->get('ModuleMetrics', 'share_usage_with_silverstripe');
     }
 }

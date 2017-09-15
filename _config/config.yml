@@ -1,5 +1,5 @@
 ---
 Name: modulemetricsconfig
 ---
-ModuleMetricsController:
+ModuleMetrics:
   share_usage_with_silverstripe: true
