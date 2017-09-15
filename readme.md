@@ -43,7 +43,16 @@ The below fields are output per site, per module. This file can be imported to M
 
 ```json
 [
-  {"Site":"http:\/\/dev.cwp15.local","ModuleName":"admin","InUse":"1","RecordsFound":2,"FieldInUse":"n/a"}
+  {
+      "Site": "http:\/\/dev.ss3.local",
+      "ModuleName": "userforms",
+      "InUse": 1,
+      "UsageType": "DataObject",
+      "RecordsFound": 2,
+      "FieldInUse": null,
+      "TableInUse": "EditableCheckbox",
+      "LastEdited": "2017-08-01 23:24:32"
+  }
 ]
 ```
 #### Field descriptions
