@@ -1,5 +1,6 @@
 {
-  "name": "fspringveldt/silverstripe-module-metrics",
+  "name": "silverstripe/module-metrics",
+  "type": "silverstripe-module",
   "description": "Experimental module which provides metrics on SilverStripe modules in use",
   "keywords": [
     "silverstripe",
