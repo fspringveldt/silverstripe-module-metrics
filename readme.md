@@ -61,7 +61,7 @@ The below fields are output per site, per module. This file can be imported to M
 * **LastEdited**: The LastEdited column in the table
 
 #### Sample results formatted as table
-![Sample formatted output](sample-formatted-output.png)
+![Sample formatted output](docs/images/sample-formatted-output.png)
 
 
 ## License
