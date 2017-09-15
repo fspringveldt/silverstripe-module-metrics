@@ -28,9 +28,9 @@ class ModuleMetrics
      * This maps a module to the table-suffixes which it introduces
      * @var array
      */
-    protected $specialModules = array(
-        'Translatable' => array('translationgroups')
-    );
+    protected $specialModules = [
+        'Translatable' => ['translationgroups']
+    ];
 
     /**
      * Returns a singleton of this object.
@@ -68,10 +68,10 @@ class ModuleMetrics
     {
         $extensions = ClassInfo::subclassesFor('DataExtension');
         array_shift($extensions);
-        $classes = array(
+        $classes = [
             'DataObjects' => ClassInfo::dataClassesFor('DataObject'),
             'DataExtensions' => $extensions
-        );
+        ];
         foreach ($classes as $label => $dataClasses) {
             ksort($dataClasses);
             $this->addDatabaseInfo($dataClasses, $label);
@@ -97,7 +97,7 @@ class ModuleMetrics
              * if they actually implement the DataExtension's fields
              */
             if ($classType == 'DataExtensions') {
-                $tables = array();
+                $tables = [];
                 $extensionFields = DataObject::custom_database_fields($className);
                 $dataClasses = ClassInfo::dataClassesFor('DataObject');
                 foreach ($dataClasses as $dataClass) {
@@ -123,10 +123,10 @@ class ModuleMetrics
             }
 
             // Add database fields
-            $info = array(
+            $info = [
                 'Table' => $tableName,
                 'Fields' => DataObject::custom_database_fields($className)
-            );
+            ];
 
             $this->result[$moduleName][$classType][strtolower($className)] = $info;
         }
@@ -154,7 +154,7 @@ class ModuleMetrics
         $manifest = SS_ClassLoader::instance()->getManifest();
         $result = $manifest->getModules();
         array_walk($result, function (&$value, $key) {
-            $value = array('Path' => $value);
+            $value = ['Path' => $value];
         });
         ksort($result);
         $this->result = $result;
@@ -277,7 +277,7 @@ class ModuleMetrics
      */
     public function usageBasedOnColumnValues($moduleName, $extensionName, $extensionInfo)
     {
-        $baseTables = array();
+        $baseTables = [];
         if (is_array($extensionInfo['Table'])) {
             $baseTables = $extensionInfo['Table'];
         } else {
@@ -319,9 +319,18 @@ class ModuleMetrics
      */
     public function toJSON($prettyPrint = false)
     {
-        $result = array();
+        $result = $this->resultAsArray();
+        return Convert::array2json($result, $prettyPrint ? JSON_PRETTY_PRINT : 0);
+    }
+
+    /**
+     * @return array
+     */
+    public function resultAsArray()
+    {
+        $result = [];
         foreach ($this->getResult() as $moduleName => $moduleInfo) {
-            $result[] = array(
+            $result[] = [
                 'Site' => $this->getSiteName(),
                 'ModuleName' => $moduleName,
                 'InUse' => (isset($moduleInfo['InUse']) ? $moduleInfo['InUse'] : 2),
@@ -330,8 +339,21 @@ class ModuleMetrics
                 'FieldInUse' => (isset($moduleInfo['FieldInUse']) ? $moduleInfo['FieldInUse'] : null),
                 'TableInUse' => (isset($moduleInfo['TableInUse']) ? $moduleInfo['TableInUse'] : null),
                 'LastEdited' => (isset($moduleInfo['LastEdited']) ? $moduleInfo['LastEdited'] : null)
-            );
+            ];
         }
-        return Convert::array2json($result, $prettyPrint ? JSON_PRETTY_PRINT : 0);
+        return $result;
+    }
+
+    /**
+     * @return ArrayList
+     */
+    public function resultAsList()
+    {
+        $result = ArrayList::create();
+        foreach ($this->resultAsArray() as $item) {
+            $result->push(ArrayData::create($item));
+        }
+
+        return $result;
     }
 }

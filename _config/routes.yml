@@ -1,0 +1,7 @@
+---
+Name: modulemetricsroutes
+After: framework/routes#coreroutes
+---
+Director:
+  rules:
+    'metrics//$Action//$ID': 'ModuleMetricsController'
