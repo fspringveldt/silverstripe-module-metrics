@@ -10,6 +10,7 @@
   "license": "BSD-3-Clause",
   "minimum-stability": "dev",
   "require": {
-    "silverstripe/framework": "^3"
+    "silverstripe/framework": "^3",
+    "maciejczyzewski/bottomline": "dev-master"
   }
 }
